@@ -104,6 +104,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    exe.pie = true; // Needs PIE for Tizen
 
     const includes = [_][]const u8{
         "usr/include",                                 "usr/include/libxml2",                      "usr/include/appcore-agent",
@@ -144,8 +145,6 @@ pub fn build(b: *std.Build) !void {
     for (includes) |include| {
         exe.addSystemIncludePath(b.path(b.pathJoin(&.{ b.sysroot.?, include })));
     }
-
-    // exe.use_lld = false;
 
     const libs = [_][]const u8{
         "accounts-svc",                    "anl",                           "appcore-agent",
