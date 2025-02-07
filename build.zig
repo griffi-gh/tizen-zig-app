@@ -217,7 +217,6 @@ pub fn build(b: *std.Build) !void {
     };
 
     exe.addLibraryPath(b.path(b.pathJoin(&.{ b.sysroot.?, "/usr/lib" })));
-
     for (libs) |lib| {
         exe.linkSystemLibrary(lib);
         // exe.linkSystemLibrary2(lib, std.Build.Module.LinkSystemLibraryOptions{
@@ -225,6 +224,7 @@ pub fn build(b: *std.Build) !void {
         //     .weak = true,
         // });
     }
+    // exe.linkLibC();
 
     b.installArtifact(exe);
 
