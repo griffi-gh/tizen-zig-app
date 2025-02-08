@@ -469,7 +469,7 @@ pub fn build(b: *std.Build) !void {
             "TIZEN_DATA={s}",
             .{tizen_data_path},
         ),
-        "./build-pkg.sh",
+        "./scripts/build-pkg.sh",
     });
     built_tpk.step.dependOn(&link_exe.step);
 

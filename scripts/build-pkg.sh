@@ -15,6 +15,7 @@ TIZEN_DATA=$(realpath "${TIZEN_DATA}")
 
 # create a temporary directory
 tpk_root=$(mktemp -d)
+echo $tpk_root
 
 # copy pkg stuff
 cp -r ./pkg/* $tpk_root
@@ -22,6 +23,12 @@ cp -r ./pkg/* $tpk_root
 # copy binary
 mkdir -p $tpk_root/bin
 cp ./zig-out/app $tpk_root/bin
+
+# get out path
+tpk_out=$(realpath ./zig-out/app.tpk)
+rm -f $tpk_out
+
+# ./scripts/tizen-cli.sh package
 
 # sign the package
 ${TIZEN}/tools/ide/bin/native-signing $tpk_root \
@@ -35,8 +42,7 @@ ${TIZEN}/tools/ide/bin/native-signing $tpk_root \
 rm -f $tpk_root/.manifest.tmp
 
 # create a zip file
-tpk_out=$(realpath ./zig-out/app.tpk)
-rm -f $tpk_out
 pushd $tpk_root
 zip -0r $tpk_out .
 popd
+
