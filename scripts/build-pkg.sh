@@ -13,6 +13,8 @@ fi
 TIZEN=$(realpath "${TIZEN}")
 TIZEN_DATA=$(realpath "${TIZEN_DATA}")
 
+echo "Create package..."
+
 # create a temporary directory
 tpk_root=$(mktemp -d)
 echo $tpk_root
@@ -31,6 +33,7 @@ rm -f $tpk_out
 # ./scripts/tizen-cli.sh package
 
 # sign the package
+echo "Signing with profile '$TIZEN_SIGNING_PROFILE'..."
 ${TIZEN}/tools/ide/bin/native-signing $tpk_root \
   ${TIZEN}/tools/certificate-generator/certificates/developer/tizen-developer-ca.cer \
   ${TIZEN_DATA}/keystore/${TIZEN_SIGNING_PROFILE}/author.p12 ${TIZEN_SIGNING_PASSWORD} \
