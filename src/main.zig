@@ -77,7 +77,7 @@ fn base_ui() void {
     c.evas_object_show(conform);
 
     const label = c.elm_label_add(conform);
-    const text: [*c]const u8 = "<align=center>Hello Tizen</align>";
+    const text: [*c]const u8 = "<align=center>Hello from Zig</align>";
     c.elm_object_part_text_set(label, null, text);
     c.evas_object_size_hint_weight_set(label, c.EVAS_HINT_EXPAND, c.EVAS_HINT_EXPAND);
     c.elm_object_part_content_set(conform, null, label);
