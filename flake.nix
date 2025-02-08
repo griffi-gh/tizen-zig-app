@@ -18,6 +18,8 @@
         packages = with pkgs; [
           zig
           zls
+          mold
+          llvmPackages_18.clang-unwrapped
         ];
       };
     });
