@@ -443,6 +443,7 @@ pub fn build(b: *std.Build) !void {
     });
     if (obj.pie orelse false) {
         link_exe.addArg("-fPIE");
+        link_exe.addArg("-pie");
     }
     if (b.sysroot) |sysroot| {
         link_exe.addArg(try std.fmt.allocPrint(
