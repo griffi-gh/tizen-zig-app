@@ -473,7 +473,7 @@ pub fn build(b: *std.Build) !void {
     });
     built_tpk.step.dependOn(&link_exe.step);
 
-    const build_tpk_step = b.step("tpk", "Build, package and sign a Tizen package (requires TIZEN_SIGNING_PROFILE and TIZEN_SIGNING_PASSWORD to be set)");
+    const build_tpk_step = b.step("tpk", "Build, package and sign a Tizen package (requires TIZEN_SIGNING_PROFILE to be set)");
     build_tpk_step.dependOn(&built_tpk.step);
 
     // -- install
