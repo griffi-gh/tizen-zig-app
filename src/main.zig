@@ -1,7 +1,121 @@
 const std = @import("std");
-// const _ = @import("./x86_rt.zig");
-
 const builtin = @import("builtin");
+
+const c = @cImport({
+    @cDefine("__GLIBC_USE(FEATURE)", "(FEATURE)");
+    @cInclude("app.h");
+    @cInclude("Elementary.h");
+    @cInclude("system_settings.h");
+    @cInclude("efl_extension.h");
+    @cInclude("dlog.h");
+});
+
+const PACKAGE: []const u8 = "org.example.zig-app";
+
+const app_state = struct {
+    window: ?*c.Evas_Object,
+    conform: ?*c.Evas_Object,
+    label: ?*c.Evas_Object,
+};
+
+fn win_delete_request_cb(_: ?*anyopaque, _: ?*c.struct__Eo_Opaque, _: ?*anyopaque) callconv(.C) void {
+    c.ui_app_exit();
+}
+
+fn win_back_cb(user_data: ?*anyopaque, _: ?*c.struct__Eo_Opaque, _: ?*anyopaque) callconv(.C) void {
+    const app: *app_state = @ptrCast(@alignCast(user_data));
+    c.elm_win_lower(app.window);
+    // c.ui_app_exit();
+}
+
+fn base_ui(app: *app_state) void {
+    app.window = c.elm_win_util_standard_add(@ptrCast(PACKAGE), @ptrCast(PACKAGE));
+    c.elm_win_autodel_set(app.window, c.EINA_TRUE);
+    c.elm_win_indicator_mode_set(app.window, c.ELM_WIN_INDICATOR_SHOW);
+    c.elm_win_indicator_opacity_set(app.window, c.ELM_WIN_INDICATOR_OPAQUE);
+    if (c.elm_win_wm_rotation_supported_get(app.window) == c.EINA_TRUE) {
+        const rots = [_]c_int{ 0, 90, 180, 270 };
+        c.elm_win_wm_rotation_available_rotations_set(app.window, &rots[0], rots.len);
+    }
+    c.evas_object_smart_callback_add(app.window, "delete,request", win_delete_request_cb, c.NULL);
+    c.eext_object_event_callback_add(app.window, c.EEXT_CALLBACK_BACK, win_back_cb, c.NULL);
+
+    // Create and initialize elm_conformant.
+    // elm_conformant is mandatory for base gui to have proper size
+    // when indicator or virtual keypad is visible.
+    app.conform = c.elm_conformant_add(app.window);
+    c.evas_object_size_hint_weight_set(app.conform, c.EVAS_HINT_EXPAND, c.EVAS_HINT_EXPAND);
+    c.elm_win_resize_object_add(app.window, app.conform);
+    c.evas_object_show(app.conform);
+
+    app.label = c.elm_label_add(app.conform);
+    c.elm_object_part_text_set(app.label, null, "<align=center>Hello from Zig</align>");
+    c.evas_object_size_hint_weight_set(app.label, c.EVAS_HINT_EXPAND, c.EVAS_HINT_EXPAND);
+    c.elm_object_part_content_set(app.conform, null, app.label);
+
+    // Show window after base gui is set up
+    c.evas_object_show(app.window);
+}
+
+fn app_create_cb(ad: ?*anyopaque) callconv(.C) bool {
+    base_ui(@ptrCast(@alignCast(ad)));
+    return true;
+}
+fn app_resume_cb(_: ?*anyopaque) callconv(.C) void {}
+fn app_app_contorl_cb(_: ?*c.struct_app_control_s, _: ?*anyopaque) callconv(.C) void {}
+fn app_pause_cb(_: ?*anyopaque) callconv(.C) void {}
+fn app_terminate_cb(_: ?*anyopaque) callconv(.C) void {}
+
+fn app_main(c_argc: c_int, c_argv: [*c][*c]u8) !c_int {
+    // var allocator = std.heap.page_allocator;
+
+    // var argv = std.ArrayList([*:0]const u8).init(allocator);
+    // defer argv.deinit();
+    // var process_args = std.process.args();
+    // while (process_args.next()) |arg| {
+    //     const c_arg = try allocator.dupeZ(u8, arg); // Convert to null-terminated C string
+    //     try argv.append(c_arg);
+    // }
+
+    var event_callback = c.ui_app_lifecycle_callback_s{
+        .@"resume" = app_resume_cb,
+        .app_control = app_app_contorl_cb,
+        .create = app_create_cb,
+        .pause = app_pause_cb,
+        .terminate = app_terminate_cb,
+    };
+    var user_data = app_state{
+        .window = null,
+        .conform = null,
+        .label = null,
+    };
+
+    const ret = c.ui_app_main(
+        c_argc,
+        c_argv,
+        &event_callback,
+        &user_data,
+    );
+
+    return ret;
+}
+
+fn _main(c_argc: c_int, c_argv: [*c][*c]u8) callconv(.C) c_int {
+    _ = c.dlog_print(c.DLOG_INFO, @ptrCast(c.LOG_TAG), "aztec: ==== INIT MAIN ====");
+    const ret = app_main(c_argc, c_argv) catch |err| {
+        // c.dlog_print(c.DLOG_ERROR, @ptrCast(c.LOG_TAG), "Error caught: %s\n", err);
+        std.debug.print("Error caught: {}\n", .{err});
+        return 1;
+    };
+    if (ret != c.APP_ERROR_NONE) {
+        _ = c.dlog_print(c.DLOG_ERROR, @ptrCast(c.LOG_TAG), "app_main() is failed. err = %d", ret);
+    }
+    return ret;
+}
+
+comptime {
+    @export(_main, .{ .name = "main", .linkage = .strong });
+}
 
 // HACK
 fn zig_probe_stack() callconv(.Naked) void {
@@ -27,102 +141,7 @@ fn zig_probe_stack() callconv(.Naked) void {
     unreachable;
 }
 comptime {
-    if ((builtin.cpu.arch == .x86) or (builtin.cpu.arch == .x86_64)) {
+    if (builtin.cpu.arch == .x86) {
         @export(zig_probe_stack, .{ .name = "__zig_probe_stack", .linkage = .weak });
-    }
-}
-
-const c = @cImport({
-    @cDefine("__GLIBC_USE(FEATURE)", "(FEATURE)");
-    @cInclude("app.h");
-    @cInclude("Elementary.h");
-    @cInclude("system_settings.h");
-    @cInclude("efl_extension.h");
-    @cInclude("dlog.h");
-});
-
-const PACKAGE: []const u8 = "org.example.basicui";
-
-fn win_delete_request_cb(_: ?*anyopaque, _: ?*c.struct__Eo_Opaque, _: ?*anyopaque) callconv(.C) void {
-    c.ui_app_exit();
-}
-
-fn win_back_cb(_: ?*anyopaque, _: ?*c.struct__Eo_Opaque, _: ?*anyopaque) callconv(.C) void {
-    // appdata_s *ad = data;
-    // /* Let window go to hide state. */
-    // elm_win_lower(window);
-    c.ui_app_exit();
-}
-
-fn base_ui() void {
-    const window = c.elm_win_util_standard_add(@ptrCast(PACKAGE), @ptrCast(PACKAGE));
-    c.elm_win_autodel_set(window, c.EINA_TRUE);
-
-    if (c.elm_win_wm_rotation_supported_get(window) == c.EINA_TRUE) {
-        const rots = [_]c_int{ 0, 90, 180, 270 };
-        c.elm_win_wm_rotation_available_rotations_set(window, &rots[0], rots.len);
-    }
-
-    c.evas_object_smart_callback_add(window, "delete,request", win_delete_request_cb, c.NULL);
-    c.eext_object_event_callback_add(window, c.EEXT_CALLBACK_BACK, win_back_cb, c.NULL);
-
-    // Create and initialize elm_conformant.
-    // elm_conformant is mandatory for base gui to have proper size
-    // when indicator or virtual keypad is visible.
-    const conform = c.elm_conformant_add(window);
-    c.elm_win_indicator_mode_set(window, c.ELM_WIN_INDICATOR_SHOW);
-    c.elm_win_indicator_opacity_set(window, c.ELM_WIN_INDICATOR_OPAQUE);
-    c.evas_object_size_hint_weight_set(conform, c.EVAS_HINT_EXPAND, c.EVAS_HINT_EXPAND);
-    c.elm_win_resize_object_add(window, conform);
-    c.evas_object_show(conform);
-
-    const label = c.elm_label_add(conform);
-    const text: [*c]const u8 = "<align=center>Hello from Zig</align>";
-    c.elm_object_part_text_set(label, null, text);
-    c.evas_object_size_hint_weight_set(label, c.EVAS_HINT_EXPAND, c.EVAS_HINT_EXPAND);
-    c.elm_object_part_content_set(conform, null, label);
-
-    // Show window after base gui is set up
-    c.evas_object_show(window);
-}
-
-fn app_create_cb(_: ?*anyopaque) callconv(.C) bool {
-    base_ui();
-    return true;
-}
-
-fn app_main() !c_int {
-    var allocator = std.heap.page_allocator;
-
-    var argv = std.ArrayList([*:0]const u8).init(allocator);
-    defer argv.deinit();
-    var process_args = std.process.args();
-    while (process_args.next()) |arg| {
-        const c_arg = try allocator.dupeZ(u8, arg); // Convert to null-terminated C string
-        try argv.append(c_arg);
-    }
-
-    var event_callback = c.ui_app_lifecycle_callback_s{
-        .create = app_create_cb,
-    };
-    const ret = c.ui_app_main(
-        @intCast(argv.items.len),
-        @ptrCast(argv.items.ptr),
-        @ptrCast(&event_callback),
-        null,
-    );
-
-    return ret;
-}
-
-export fn main() void {
-    const ret = app_main() catch |err| {
-        // c.dlog_print(c.DLOG_ERROR, @ptrCast(c.LOG_TAG), "Error caught: %s\n", err);
-        std.debug.print("Error caught: {}\n", .{err});
-        std.process.exit(1);
-    };
-    if (ret != c.APP_ERROR_NONE) {
-        _ = c.dlog_print(c.DLOG_ERROR, @ptrCast(c.LOG_TAG), "app_main() is failed. err = %d", ret);
-        std.process.exit(@intCast(ret));
     }
 }
