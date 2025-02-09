@@ -493,4 +493,20 @@ pub fn build(b: *std.Build) !void {
 
     const install_tpk_step = b.step("sideload", "Install the Tizen package on the connected device");
     install_tpk_step.dependOn(&install_tpk.step);
+
+    // -- run
+
+    const sdb_run = b.addSystemCommand(&[_][]const u8{
+        "/usr/bin/env",
+        try std.fmt.allocPrint(
+            b.allocator,
+            "TIZEN={s}",
+            .{tizen_path},
+        ),
+        "./scripts/run-pkg.sh",
+    });
+    sdb_run.step.dependOn(&install_tpk.step);
+
+    const run_step = b.step("run", "Run the Tizen package on the connected device");
+    run_step.dependOn(&sdb_run.step);
 }
