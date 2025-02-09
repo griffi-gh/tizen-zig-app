@@ -107,6 +107,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    obj.pie = true; // Needs PIE for Tizen
 
     const includes = [_][]const u8{
         "usr/include",
@@ -304,6 +305,7 @@ pub fn build(b: *std.Build) !void {
         "-lc",
         "-lcsr-client",
         "-lcurl",
+        // Libs below require linking with stdc++
         // "-ldali-adaptor",
         // "-ldali-core",
         // "-ldali-toolkit",
@@ -349,12 +351,13 @@ pub fn build(b: *std.Build) !void {
         "-lgthread-2.0",
         "-lharfbuzz-icu",
         "-lharfbuzz",
-        "-licudata",
-        "-licui18n",
-        "-licuio",
-        "-licutest",
-        "-licutu",
-        "-licuuc",
+        // (ABI version mismatch)
+        // "-licudata",
+        // "-licui18n",
+        // "-licuio",
+        // "-licutest",
+        // "-licutu",
+        // "-licuuc",
         "-liotcon",
         "-ljson-glib-1.0",
         "-lkey-manager-client",
@@ -412,11 +415,6 @@ pub fn build(b: *std.Build) !void {
         "-lxml2",
         "-lyaca",
         "-lz",
-
-        // GCC
-        // "-lc",
-        // "-lm",
-        // "-lstdc++",
     };
 
     const exe_path = b.pathJoin(&.{ b.install_path, "app" });
@@ -440,6 +438,7 @@ pub fn build(b: *std.Build) !void {
         exe_path,
         b.pathJoin(&.{ b.install_path, obj_install.dest_rel_path }),
         "-fmessage-length=0",
+        "-shared",
     });
     if (obj.pie orelse false) {
         link_exe.addArg("-fPIE");
