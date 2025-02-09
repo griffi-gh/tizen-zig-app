@@ -101,7 +101,7 @@ fn app_main(c_argc: c_int, c_argv: [*c][*c]u8) !c_int {
 }
 
 fn _main(c_argc: c_int, c_argv: [*c][*c]u8) callconv(.C) c_int {
-    _ = c.dlog_print(c.DLOG_INFO, @ptrCast(c.LOG_TAG), "aztec: ==== INIT MAIN ====");
+    _ = c.dlog_print(c.DLOG_INFO, @ptrCast(c.LOG_TAG), "==== INIT MAIN ====");
     const ret = app_main(c_argc, c_argv) catch |err| {
         c.dlog_print(c.DLOG_ERROR, @ptrCast(c.LOG_TAG), "Error caught: %s\n", err);
         return 1;
