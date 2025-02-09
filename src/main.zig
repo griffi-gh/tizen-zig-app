@@ -1,16 +1,12 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const meta = @import("./meta.zig");
+const log = @import("./log.zig");
+const c = @import("./c.zig").c;
 
-const c = @cImport({
-    @cDefine("__GLIBC_USE(FEATURE)", "(FEATURE)");
-    @cInclude("app.h");
-    @cInclude("Elementary.h");
-    @cInclude("system_settings.h");
-    @cInclude("efl_extension.h");
-    @cInclude("dlog.h");
-});
-
-const PACKAGE: []const u8 = "org.example.zig-app";
+pub const std_options = .{
+    .logFn = log.logFn,
+};
 
 const app_state = struct {
     window: ?*c.Evas_Object,
@@ -29,7 +25,10 @@ fn win_back_cb(user_data: ?*anyopaque, _: ?*c.struct__Eo_Opaque, _: ?*anyopaque)
 }
 
 fn base_ui(app: *app_state) void {
-    app.window = c.elm_win_util_standard_add(@ptrCast(PACKAGE), @ptrCast(PACKAGE));
+    app.window = c.elm_win_util_standard_add(
+        @ptrCast(meta.PACKAGE),
+        @ptrCast(meta.PACKAGE),
+    );
     c.elm_win_autodel_set(app.window, c.EINA_TRUE);
     c.elm_win_indicator_mode_set(app.window, c.ELM_WIN_INDICATOR_SHOW);
     c.elm_win_indicator_opacity_set(app.window, c.ELM_WIN_INDICATOR_OPAQUE);
@@ -67,16 +66,6 @@ fn app_pause_cb(_: ?*anyopaque) callconv(.C) void {}
 fn app_terminate_cb(_: ?*anyopaque) callconv(.C) void {}
 
 fn app_main(c_argc: c_int, c_argv: [*c][*c]u8) !c_int {
-    // var allocator = std.heap.page_allocator;
-
-    // var argv = std.ArrayList([*:0]const u8).init(allocator);
-    // defer argv.deinit();
-    // var process_args = std.process.args();
-    // while (process_args.next()) |arg| {
-    //     const c_arg = try allocator.dupeZ(u8, arg); // Convert to null-terminated C string
-    //     try argv.append(c_arg);
-    // }
-
     var event_callback = c.ui_app_lifecycle_callback_s{
         .@"resume" = app_resume_cb,
         .app_control = app_app_contorl_cb,
@@ -101,13 +90,13 @@ fn app_main(c_argc: c_int, c_argv: [*c][*c]u8) !c_int {
 }
 
 fn _main(c_argc: c_int, c_argv: [*c][*c]u8) callconv(.C) c_int {
-    _ = c.dlog_print(c.DLOG_INFO, @ptrCast(c.LOG_TAG), "==== INIT MAIN ====");
+    std.log.info("init main", .{});
     const ret = app_main(c_argc, c_argv) catch |err| {
-        c.dlog_print(c.DLOG_ERROR, @ptrCast(c.LOG_TAG), "Error caught: %s\n", err);
+        std.log.err("Error caught: {}\n", .{err});
         return 1;
     };
     if (ret != c.APP_ERROR_NONE) {
-        _ = c.dlog_print(c.DLOG_ERROR, @ptrCast(c.LOG_TAG), "app_main() is failed. err = %d", ret);
+        std.log.err("app_main() is failed. err = {}", .{ret});
     }
     return ret;
 }

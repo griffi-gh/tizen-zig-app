@@ -108,6 +108,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     obj.pie = true; // Needs PIE for Tizen
+    obj.is_linking_libc = true; // we'll link it manually
 
     const includes = [_][]const u8{
         "usr/include",
