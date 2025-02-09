@@ -19,6 +19,7 @@ fn win_delete_request_cb(_: ?*anyopaque, _: ?*c.struct__Eo_Opaque, _: ?*anyopaqu
 }
 
 fn win_back_cb(user_data: ?*anyopaque, _: ?*c.struct__Eo_Opaque, _: ?*anyopaque) callconv(.C) void {
+    std.log.info("back button pressed", .{});
     const app: *app_state = @ptrCast(@alignCast(user_data));
     c.elm_win_lower(app.window);
     // c.ui_app_exit();
@@ -54,6 +55,8 @@ fn base_ui(app: *app_state) void {
 
     // Show window after base gui is set up
     c.evas_object_show(app.window);
+
+    std.log.info("ui intialized", .{});
 }
 
 fn app_create_cb(ad: ?*anyopaque) callconv(.C) bool {
