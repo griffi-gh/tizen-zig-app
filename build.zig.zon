@@ -1,5 +1,6 @@
 .{
-    .name = "zig-test",
+    .name = .zig_test,
+    .fingerprint = 0x10159def115e5644,
     .version = "0.0.0",
     .minimum_zig_version = "0.13.0",
     .dependencies = .{},
