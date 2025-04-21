@@ -16,10 +16,12 @@
     in {
       devShell = pkgs.mkShell {
         packages = with pkgs; [
-          zig
+          zig_0_14
           zls
           mold
           llvmPackages_18.clang-unwrapped
+          nil
+          nixd
         ];
       };
     });

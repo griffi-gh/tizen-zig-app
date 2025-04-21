@@ -101,11 +101,15 @@ pub fn build(b: *std.Build) !void {
     // exe.pie = true; // Needs PIE for Tizen
     // exe.link_gc_sections = false;
 
-    const obj = b.addObject(.{
-        .name = "app",
+    const root_module = b.addModule("app", .{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    const obj = b.addObject(.{
+        .name = "app",
+        .root_module = root_module,
     });
     obj.pie = true; // Needs PIE for Tizen
     obj.is_linking_libc = true; // we'll link it manually
